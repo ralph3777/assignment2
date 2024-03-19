@@ -1,0 +1,46 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <omp.h>
+
+#define MAX 10000
+#define NUM_BUCKETS 5
+
+int array[MAX];
+int length = sizeof(array) / sizeof(array[0]);
+int bucketSize = length / NUM_BUCKETS;
+int compare(const void *a, const void *b) { return (*(int *)a - *(int *)b); }
+
+int main() {
+    int i, j, count;
+    int minVal = 0, maxVal = 999;
+    int buckets[NUM_BUCKETS][MAX];
+    int size[NUM_BUCKETS] = {0};
+
+    for (i = 0; i < MAX; i++) {
+        array[i] = minVal + (rand() % (maxVal - minVal + 1));
+    }
+
+    #pragma omp parallel for private(j, count)
+    for (i = 0; i < NUM_BUCKETS; i++) {
+        count = 0;
+        for (j = 0; j < length; j++) {
+            if (array[j] >= i * bucketSize && array[j] < (i + 1) * bucketSize) {
+                buckets[i][count++] = array[j];
+            }
+        }
+        size[i] = count;
+        qsort(buckets[i], size[i], sizeof(int), compare);
+    }
+
+    count = 0;
+    for (i = 0; i < NUM_BUCKETS; i++) {
+        for (j = 0; j < size[i]; j++) {
+            array[count++] = buckets[i][j];
+        }
+    }
+
+    for (i = 0; i < MAX; i++) {
+        printf("%d ", array[i]);
+    }
+    return 0;
+}
