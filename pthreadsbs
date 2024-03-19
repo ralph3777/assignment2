@@ -1,0 +1,58 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+#define MAX 10000
+#define NUM_BUCKETS 5
+#define NUM_THREADS 5
+
+int array[MAX];
+int length = sizeof(array) / sizeof(array[0]);
+int bucketSize = length / NUM_BUCKETS;
+
+typedef struct {
+    int start;
+    int end;
+} Bucket;
+
+void *sortBucket(void *arg) {
+    Bucket *bucket = (Bucket *)arg;
+    qsort(array + bucket->start, bucket->end - bucket->start + 1, sizeof(int), compare);
+    pthread_exit(NULL);
+}
+
+int compare(const void *a, const void *b) {
+    return (*(int *)a - *(int *)b);
+}
+
+void bucketSort() {
+    pthread_t threads[NUM_THREADS];
+    Bucket buckets[NUM_BUCKETS];
+
+    for (int i = 0; i < NUM_BUCKETS; i++) {
+        buckets[i].start = i * bucketSize;
+        buckets[i].end = (i + 1) * bucketSize - 1;
+        if (i == NUM_BUCKETS - 1) {
+            buckets[i].end = length - 1;
+        }
+    }
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_create(&threads[i], NULL, sortBucket, (void *)&buckets[i]);
+    }
+
+    for (int i = 0; i < NUM_THREADS; i++) {
+        pthread_join(threads[i], NULL);
+    }
+}
+
+int main() {
+    for (int i = 0; i < MAX; i++) {
+        array[i] = rand() % 1000;
+    }
+    bucketSort();
+    for (int i = 0; i < MAX; i++) {
+        printf("%d ", array[i]);
+    }
+    return 0;
+}
